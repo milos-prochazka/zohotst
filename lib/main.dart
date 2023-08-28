@@ -146,6 +146,7 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
         context,
         MaterialPageRoute
         (
+          settings: const RouteSettings(name: 'OAuthWeb',),
           builder: (context) => OAuthWeb
           (
             url: 'https://accounts.zoho.com/oauth/v2/auth',
@@ -198,6 +199,10 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
       );
 
       print(response.toString());
+
+      // ignore: use_build_context_synchronously
+      if (!context.mounted) return;
+
 
       if (response.containsKey('access_token')) 
       {

@@ -16,5 +16,3 @@ git fetch origin $BRANCH
 git rebase -i origin/$BRANCH
 git pull
 
-cd ..config
-./selected-config.sh
