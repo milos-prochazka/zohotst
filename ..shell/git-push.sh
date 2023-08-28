@@ -1,6 +1,6 @@
 #!/bin/sh
 
-BRANCH="master"
+BRANCH="main"
 
 read -p "Komentar ke commitu:" comment
 
@@ -11,10 +11,6 @@ if [[ "$comment" == "" ]] ; then
     read -t 10 -p "Komentar musi byt zadan" none
     exit 0
 fi
-
-dart-prep --enable-all ./
-dart-format ./ 2
-#find ./ -name "*.bak" -type f -delete
 
 echo "============== 1 ===================="
 git add --all
@@ -39,7 +35,4 @@ git gc
 git gc --aggressive
 git prune
 
-
-cd ..config
-./selected-config.sh
 
