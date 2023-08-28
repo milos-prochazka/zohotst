@@ -9,24 +9,21 @@ import 'package:uni_links/uni_links.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-void main() 
-{
+void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget 
+class MyApp extends StatelessWidget
 {
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) 
+  Widget build(BuildContext context)
   {
-    return MaterialApp
-    (
+    return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData
-      (
+      theme: ThemeData(
         // This is the theme of your application.
         //
         // TRY THIS: Try running your application with "flutter run". You'll see
@@ -50,8 +47,7 @@ class MyApp extends StatelessWidget
   }
 }
 
-class MyHomePage extends StatefulWidget 
-{
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
@@ -69,31 +65,27 @@ class MyHomePage extends StatefulWidget
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> 
-{
+class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
-  void _incrementCounter() 
+  void _incrementCounter()
   {
-    setState
-    (
-      () 
-      {
-        // This call to setState tells the Flutter framework that something has
-        // changed in this State, which causes it to rerun the build method below
-        // so that the display can reflect the updated values. If we changed
-        // _counter without calling setState(), then the build method would not be
-        // called again, and so nothing would appear to happen.
-        _counter++;
-        test1();
-      }
-    );
+    setState(()
+    {
+      // This call to setState tells the Flutter framework that something has
+      // changed in this State, which causes it to rerun the build method below
+      // so that the display can reflect the updated values. If we changed
+      // _counter without calling setState(), then the build method would not be
+      // called again, and so nothing would appear to happen.
+      _counter++;
+      test1();
+    });
   }
 
-  void test1() async 
+  void test1 () async
   {
     var client = HttpClient();
-    try 
+    try
     {
       //final url = Uri.parse('https://www.google.com');
 
@@ -141,73 +133,63 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
       return;*/
 
       // Grant token
-      Navigator.push
-      (
+      Navigator.push(
         context,
-        MaterialPageRoute
-        (
-          builder: (context) => OAuthWeb
-          (
-            url: 'https://accounts.zoho.com/oauth/v2/auth',
-            components: const 
+        MaterialPageRoute(builder: (context) => OAuthWeb(
+          url:'https://accounts.zoho.com/oauth/v2/auth',
+          components: const {
+            'scope': 'ZohoBooks.invoices.CREATE,ZohoBooks.invoices.READ,ZohoBooks.invoices.UPDATE,ZohoBooks.invoices.DELETE,ZohoBooks.settings.READ,ZohoBooks.contacts.READ',
+            'client_id': client_id,
+            'state': 'testing',
+            'response_type': 'code',
+            'redirect_uri': 'https://abcalc.8u.cz/test',
+            'access_type': 'online',
+            'prompt': 'mujprompt'
+          },
+          redirectUrlTest: 'https://abcalc.8u.cz',
+          onRedirect: (String url)
+          {
+            try
             {
-              'scope':
-              'ZohoBooks.invoices.CREATE,ZohoBooks.invoices.READ,ZohoBooks.invoices.UPDATE,ZohoBooks.invoices.DELETE,ZohoBooks.settings.READ,ZohoBooks.contacts.READ',
-              'client_id': client_id,
-              'state': 'testing',
-              'response_type': 'code',
-              'redirect_uri': 'https://abcalc.8u.cz/test',
-              'access_type': 'online',
-              'prompt': 'mujprompt'
-            },
-            redirectUrlTest: 'https://abcalc.8u.cz',
-            onRedirect: (String url) 
+              Navigator.pop(context);
+              final uri = Uri.parse(url);
+              final code = uri.queryParameters['code'];
+              codeCompleter.complete(code);
+            }
+            catch (e)
             {
-              try 
-              {
-                Navigator.pop(context);
-                final uri = Uri.parse(url);
-                final code = uri.queryParameters['code'];
-                codeCompleter.complete(code);
-              } 
-              catch (e) 
-              {
-                codeCompleter.completeError(e);
-              }
-            },
-          )
-        ),
+              codeCompleter.completeError(e);
+            }
+          },
+        )),
       );
 
       final code = await codeCompleter.future;
+
 
       // Refresh token
       // https://accounts.zoho.com/oauth/v2/token?code=$CODE$&client_id=$CLIENT_ID$V&client_secret=$SECRET$&redirect_uri=http://www.zoho.com/books&grant_type=authorization_code
 
       //final response = await oAuthGet('https://accounts.zoho.com/oauth/v2/token?code=$code&client_id=$client_id&client_secret=$client_secret&redirect_uri=http://www.zoho.com/books&grant_type=authorization_code',null);
-      var response = await oAuthGet
-      (
-        'https://accounts.zoho.com/oauth/v2/token', 
-        {
-          'code': code,
-          'client_id': client_id,
-          'client_secret': client_secret,
-          'redirect_uri': 'https://abcalc.8u.cz/test',
-          'grant_type': 'authorization_code',
-        }
-      );
+      var response = await oAuthGet('https://accounts.zoho.com/oauth/v2/token',
+      {
+        'code' : code,
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'redirect_uri': 'https://abcalc.8u.cz/test',
+        'grant_type': 'authorization_code',
+      });
 
       print(response.toString());
 
-      if (response.containsKey('access_token')) 
+      if (response.containsKey('access_token'))
       {
         final accessToken = response['access_token'];
 
         //response = await oAuthGet('https://books.zoho.com/api/v3/invoices', {'authtoken': accessToken});
         print(response.toString());
 
-        final zoho =
-        ZohoClient(clientId: client_id, clientSecret: client_secret, redirectUrl: 'https://abcalc.8u.cz/test');
+        final zoho = ZohoClient(clientId:client_id,  clientSecret: client_secret, redirectUrl: 'https://abcalc.8u.cz/test');
         zoho.accessToken = accessToken;
 
         final user = await zoho.booksGetCurrentUser();
@@ -218,35 +200,30 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
 
         final contacts = await zoho.get('https://books.zoho.com/api/v3/contacts');
 
-        final cr =
-        await zoho.get
-        (
-          'https://books.zoho.com/api/v3/invoices', requestType: ZohoRequest_Type.POST, jsonData: 
-          {
-            'customer_id': '4424043000000082003',
-            'line_items': 
-            [
-              {
-                //'item_id': '4424043000000085003',
-                'rate': 100,
-                'quantity': 1,
-                'name': 'Toto je nazev',
-                'description': 'Toto je popis polozky'
-              }
-            ]
-          }
-        );
+        final cr  = await zoho.get('https://books.zoho.com/api/v3/invoices', requestType: ZohoRequest_Type.POST,
+                          jsonData: {
+                            'customer_id': '4424043000000082003',
+                            'line_items': [
+                              {
+                                //'item_id': '4424043000000085003',
+                                'rate': 100,
+                                'quantity': 1,
+                                'name': 'Toto je nazev',
+                                'description': 'Toto je popis polozky'
+                              }
+                            ]
+                          });
         final brk = 1;
       }
-    } 
-    finally 
+    }
+    finally
     {
       client.close();
     }
   }
 
   @override
-  Widget build(BuildContext context) 
+  Widget build(BuildContext context)
   {
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
@@ -254,10 +231,8 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    return Scaffold
-    (
-      appBar: AppBar
-      (
+    return Scaffold(
+      appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
         // change color while the other colors stay the same.
@@ -266,12 +241,10 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center
-      (
+      body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
-        child: Column
-        (
+        child: Column(
           // Column is also a layout widget. It takes a list of children and
           // arranges them vertically. By default, it sizes itself to fit its
           // children horizontally, and tries to be as tall as its parent.
@@ -286,22 +259,18 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
           // action in the IDE, or press "p" in the console), to see the
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>
-          [
-            const Text
-            (
+          children: <Widget>[
+            const Text(
               'You have pushed the button this many times:',
             ),
-            Text
-            (
+            Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton
-      (
+      floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
         child: const Icon(Icons.add),
@@ -310,7 +279,7 @@ https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047
   }
 }
 
-class OAuthWeb extends StatefulWidget 
+class OAuthWeb extends StatefulWidget
 {
   final String url;
   final Map<String, String>? components;
@@ -319,16 +288,18 @@ class OAuthWeb extends StatefulWidget
 
   const OAuthWeb({super.key, required this.url, this.components, required this.redirectUrlTest, this.onRedirect});
 
+
+
   @override
   State<OAuthWeb> createState() => _OAuthWebState();
 }
 
-class _OAuthWebState extends State<OAuthWeb> 
+class _OAuthWebState extends State<OAuthWeb>
 {
   WebViewController? _controller;
 
   @override
-  void initState() 
+  void initState()
   {
     /*final builder = StringBuffer(widget.url);
     if (widget.components != null)
@@ -337,61 +308,59 @@ class _OAuthWebState extends State<OAuthWeb>
       builder.writeAll(widget.components!.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}'), '&');
     }*/
 
+
     super.initState();
 
     final uri = buildUri(widget.url, widget.components);
 
     _controller = WebViewController()
-    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-    ..setBackgroundColor(const Color(0x00000000))
-    ..setNavigationDelegate
-    (
-      NavigationDelegate
-      (
-        onProgress: (int progress) 
-        {
-          // Update loading bar.
-        },
-        onPageStarted: (String url) {},
-        onPageFinished: (String url) {},
-        onWebResourceError: (WebResourceError error) {},
-        onNavigationRequest: (NavigationRequest request) 
-        {
-          print(request.url);
-          if (request.url.contains(widget.redirectUrlTest)) 
-          {
-            widget.onRedirect?.call(request.url);
-            return NavigationDecision.prevent;
-          } 
-          else 
-          {
-            return NavigationDecision.navigate;
-          }
-        },
-      ),
-    )
-    ..loadRequest(uri, headers: {'Accept': '*/*'});
-  }
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0x00000000))
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            // Update loading bar.
+          },
+          onPageStarted: (String url) {},
+          onPageFinished: (String url) {},
+          onWebResourceError: (WebResourceError error) {},
+          onNavigationRequest: (NavigationRequest request) {
+            print (request.url);
+            if (request.url.contains(widget.redirectUrlTest))
+            {
+              widget.onRedirect?.call(request.url);
+              return NavigationDecision.prevent;
+            }
+            else
+            {
+              return NavigationDecision.navigate;
+            }
+          },
+        ),
+      )
+      ..loadRequest(uri, headers: {'Accept': '*/*'});
 
+  }
   @override
-  Widget build(BuildContext context) 
+  Widget build(BuildContext context)
   {
-    return Scaffold
-    (
-      appBar: AppBar(title: const Text('Flutter Simple Example')),
-      body: WebViewWidget(controller: _controller!),
-    );
+    return Scaffold(
+    appBar: AppBar(title: const Text('Flutter Simple Example')),
+    body: WebViewWidget(controller: _controller!),
+  );
   }
 }
 
-Future<Map> oAuthGet(String url, [Map<String, String>? components]) async 
+
+Future<Map> oAuthGet(String url, [Map<String, String>? components]) async
 {
   final uri = buildUri(url, components);
   final client = HttpClient();
 
+
   print('oAuthGet: ${uri.toString()}');
 
-  try 
+  try
   {
     //final request = await client.getUrl(uri);
     final request = await client.postUrl(uri);
@@ -400,44 +369,42 @@ Future<Map> oAuthGet(String url, [Map<String, String>? components]) async
     final code = response.statusCode;
     final stringData = await response.transform(const Utf8Decoder(allowMalformed: true)).join();
 
-    if (code / 100 != 2) 
+    if (code / 100 != 2)
     {
       return {'error': 'http', 'code': code, 'data': stringData};
-    } 
-    else 
+    }
+    else
     {
-      try 
+      try
       {
         final data = jsonDecode(stringData);
         return data;
-      } 
-      catch (e) 
+      }
+      catch (e)
       {
         return {'error': 'response', 'code': code, 'data': stringData};
       }
     }
-  } 
-  finally 
+  }
+  finally
   {
     client.close();
   }
 }
 
-Uri buildUri(String url, [Map<String, String>? components]) 
+Uri buildUri(String url, [Map<String, String>? components])
 {
   final builder = StringBuffer(url);
-  if (components != null) 
+  if (components != null)
   {
     builder.write('?');
-    builder.writeAll
-    (
-      components.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}'), '&'
-    );
+    builder.writeAll(components.entries.map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}'), '&');
   }
   return Uri.parse(builder.toString());
 }
 
-class ZohoClient 
+
+class ZohoClient
 {
   final String clientId;
   final String clientSecret;
@@ -447,52 +414,53 @@ class ZohoClient
   var scope = <String>{};
   String zohoApis = 'https://www.zohoapis.com';
 
-  ZohoClient({required this.clientId, required this.clientSecret, required this.redirectUrl, Set<String>? scope}) 
+  ZohoClient({required this.clientId, required this.clientSecret, required this.redirectUrl, Set<String>? scope})
   {
-    if (scope != null) 
+    if (scope != null)
     {
       this.scope = scope;
     }
   }
 
-  Future<Map> booksGetCurrentUser() => get('$zohoApis/books/v3/users/me');
+  Future<Map> booksGetCurrentUser() => get ('$zohoApis/books/v3/users/me');
 
-  Future<Map> get(String url,
-    {ZohoRequest_Type requestType = ZohoRequest_Type.GET, Map<String, String>? components, dynamic jsonData}) async 
+
+  Future<Map> get(String url, {ZohoRequest_Type requestType=ZohoRequest_Type.GET, Map<String, String>? components, dynamic jsonData}) async
   {
     final uri = buildUri(url, components);
     final client = HttpClient();
 
-    try 
+    try
     {
       HttpClientRequest request;
 
-      switch (requestType) 
+      switch (requestType)
       {
         case ZohoRequest_Type.GET:
-        request = await client.getUrl(uri);
-        break;
+          request = await client.getUrl(uri);
+          break;
         case ZohoRequest_Type.POST:
-        request = await client.postUrl(uri);
-        break;
+          request = await client.postUrl(uri);
+          break;
         case ZohoRequest_Type.PUT:
-        request = await client.putUrl(uri);
-        break;
+          request = await client.putUrl(uri);
+          break;
         case ZohoRequest_Type.DELETE:
-        request = await client.deleteUrl(uri);
-        break;
+          request = await client.deleteUrl(uri);
+          break;
         default:
-        request = await client.getUrl(uri);
-        break;
+          request = await client.getUrl(uri);
+          break;
       }
 
+
       request.headers.add('Accept', '*/*');
-      if (accessToken.isNotEmpty) 
+      if (accessToken.isNotEmpty)
       {
         request.headers.add('Authorization', 'Zoho-oauthtoken $accessToken');
       }
 
-      if (jsonData != null) 
+      if (jsonData != null)
       {
         request.headers.add('Content-Type', 'application/json');
         request.add(utf8.encode(json.encode(jsonData)));
@@ -502,32 +470,36 @@ class ZohoClient
       final code = response.statusCode;
       final stringData = await response.transform(const Utf8Decoder(allowMalformed: true)).join();
 
-      if (code != 200) 
+      if (code != 200)
       {
         return {'error': 'http', 'code': code, 'data': stringData};
-      } 
-      else 
+      }
+      else
       {
-        try 
+        try
         {
           final data = jsonDecode(stringData);
           return data;
-        } 
-        catch (e) 
+        }
+        catch (e)
         {
           return {'error': 'response', 'code': code, 'data': stringData};
         }
       }
-    } 
-    catch (e) 
+    }
+    catch (e)
     {
       return {'error': 'http', 'code': 0, 'data': e.toString()};
-    } 
-    finally 
+    }
+    finally
     {
       client.close();
     }
   }
+
 }
 
-enum ZohoRequest_Type { GET, POST, PUT, DELETE }
+  enum ZohoRequest_Type
+  {
+    GET,POST,PUT,DELETE
+  }
