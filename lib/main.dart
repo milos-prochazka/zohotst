@@ -106,125 +106,33 @@ class _MyHomePageState extends State<MyHomePage>
       //final stringData = await response.transform(const Utf8Decoder(allowMalformed: true)).join();
       //print(stringData);
 
-      final codeCompleter = Completer<String>();
 
       const client_id = '1000.IYOMEJWSGDHDEEMZ5Q3251CZMYCH7K';
       const client_secret = 'c7de448c801f0093dc2be8acf45753b3d722387c5b';
 
-/*
-https://accounts.zoho.com/oauth/v2/auth?scope=ZohoBooks.invoices.CREATE,ZohoBooks.invoices.READ,ZohoBooks.invoices.UPDATE,ZohoBooks.invoices.DELETE&client_id=1000.I0TZTUJ5X012YGJ8YD3OTZSPZC411C&state=testing&response_type=code&redirect_uri=https://abcalc.8u.cz&access_type=offline
-
-https://accounts.zoho.com/oauth/v2/token?code=1000.dd7exxxxxxxxxxxxxxxxxxxxxxxx9bb8.b6c0xxxxxxxxxxxxxxxxxxxxxxxxdca4&client_id=I0TZTUJ5X012YGJ8YD3OTZSPZC411C&client_secret=80ee449522b103070bce13944f4b9eacab7e3ada42&redirect_uri=https://abcalc.8u.cz&grant_type=authorization_code
-https://accounts.zoho.com/oauth/v2/token?code=1000.459e236a08bcce606926e95efe047de8.e66506af58933bcceb9c188bace8180e&client_id=I0TZTUJ5X012YGJ8YD3OTZSPZC411C&client_secret=80ee449522b103070bce13944f4b9eacab7e3ada42&redirect_uri=https://abcalc.8u.cz&grant_type=authorization_code
-*/
-      /*Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => OAuthWeb(
-          url:'https://accounts.zoho.com',
-          redirectUrlTest: 'https://abcalc.8u.cz',
-          onRedirect: (String url)
-          {
-            try
-            {
-              Navigator.pop(context);
-              final uri = Uri.parse(url);
-              final code = uri.queryParameters['code'];
-              codeCompleter.complete(code);
-            }
-            catch (e)
-            {
-              codeCompleter.completeError(e);
-            }
-          },
-        )),
-      );
-      return;*/
-
-      // Grant token
-      Navigator.push
-      (
-        context,
-        MaterialPageRoute
-        (
-          settings: const RouteSettings(name: 'OAuthWeb',),
-          builder: (context) => OAuthWeb
-          (
-            url: 'https://accounts.zoho.com/oauth/v2/auth',
-            components: const 
-            {
-              'scope':
-              'ZohoBooks.invoices.CREATE,ZohoBooks.invoices.READ,ZohoBooks.invoices.UPDATE,ZohoBooks.invoices.DELETE,ZohoBooks.settings.READ,ZohoBooks.contacts.READ',
-              'client_id': client_id,
-              'state': 'testing',
-              'response_type': 'code',
-              'redirect_uri': 'https://abcalc.8u.cz/test',
-              'access_type': 'online',
-              'prompt': 'mujprompt'
-            },
-            redirectUrlTest: 'https://abcalc.8u.cz',
-            onRedirect: (String url) 
-            {
-              try 
-              {
-                Navigator.pop(context);
-                final uri = Uri.parse(url);
-                final code = uri.queryParameters['code'];
-                codeCompleter.complete(code);
-              } 
-              catch (e) 
-              {
-                codeCompleter.completeError(e);
-              }
-            },
-          )
-        ),
-      );
-
-      final code = await codeCompleter.future;
-
-      // Refresh token
-      // https://accounts.zoho.com/oauth/v2/token?code=$CODE$&client_id=$CLIENT_ID$V&client_secret=$SECRET$&redirect_uri=http://www.zoho.com/books&grant_type=authorization_code
-
-      //final response = await oAuthGet('https://accounts.zoho.com/oauth/v2/token?code=$code&client_id=$client_id&client_secret=$client_secret&redirect_uri=http://www.zoho.com/books&grant_type=authorization_code',null);
-      var response = await oAuthGet
-      (
-        'https://accounts.zoho.com/oauth/v2/token', 
-        {
-          'code': code,
-          'client_id': client_id,
-          'client_secret': client_secret,
-          'redirect_uri': 'https://abcalc.8u.cz/test',
-          'grant_type': 'authorization_code',
-        }
-      );
-
-      print(response.toString());
-
-      // ignore: use_build_context_synchronously
-      if (!context.mounted) return;
-
-
-      if (response.containsKey('access_token')) 
-      {
-        final accessToken = response['access_token'];
-
-        //response = await oAuthGet('https://books.zoho.com/api/v3/invoices', {'authtoken': accessToken});
-        print(response.toString());
 
         final zoho =
         ZohoClient(clientId: client_id, clientSecret: client_secret, redirectUrl: 'https://abcalc.8u.cz/test');
-        zoho.accessToken = accessToken;
+        String code = await zoho.getOAuthCode(context:context,timeout:const Duration(seconds: 600));
+
+      // Grant token
+        String access = await zoho.getAccessToken();
+      {
 
         final user = await zoho.booksGetCurrentUser();
 
-        final inv = await zoho.get('https://books.zoho.com/api/v3/invoices');
+        final org = await zoho.doRequest('https://books.zoho.com/api/v3/organizations');
 
-        final items = await zoho.get('https://books.zoho.com/api/v3/items');
+        final inv = await zoho.doRequest('https://books.zoho.com/api/v3/invoices');
 
-        final contacts = await zoho.get('https://books.zoho.com/api/v3/contacts');
+        final items = await zoho.doRequest('https://books.zoho.com/api/v3/items');
+
+        final contacts = await zoho.doRequest('https://books.zoho.com/api/v3/contacts');
+
+        return;
 
         final cr =
-        await zoho.get
+        await zoho.doRequest
         (
           'https://books.zoho.com/api/v3/invoices', requestType: ZohoRequest_Type.POST, jsonData: 
           {
@@ -357,15 +265,25 @@ class _OAuthWebState extends State<OAuthWeb>
         {
           // Update loading bar.
         },
-        onPageStarted: (String url) {},
-        onPageFinished: (String url) {},
-        onWebResourceError: (WebResourceError error) {},
+        onPageStarted: (String url)
+        {
+          print ('onPageStarted: $url');
+        },
+        onPageFinished: (String url) 
+        {
+          print ('onPageFinished: $url');
+        },
+        onWebResourceError: (WebResourceError error) 
+        {
+          print ('onWebResourceError: $error');
+        },
         onNavigationRequest: (NavigationRequest request) 
         {
           print(request.url);
           if (request.url.contains(widget.redirectUrlTest)) 
           {
             widget.onRedirect?.call(request.url);
+            Navigator.pop(context);
             return NavigationDecision.prevent;
           } 
           else 
@@ -375,6 +293,7 @@ class _OAuthWebState extends State<OAuthWeb>
         },
       ),
     )
+    ..setUserAgent('Mozilla/5.0 (Linux; Android 10; Redmi Note 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.88 Mobile Safari/537.36')
     ..loadRequest(uri, headers: {'Accept': '*/*'});
   }
 
@@ -389,44 +308,6 @@ class _OAuthWebState extends State<OAuthWeb>
   }
 }
 
-Future<Map> oAuthGet(String url, [Map<String, String>? components]) async 
-{
-  final uri = buildUri(url, components);
-  final client = HttpClient();
-
-  print('oAuthGet: ${uri.toString()}');
-
-  try 
-  {
-    //final request = await client.getUrl(uri);
-    final request = await client.postUrl(uri);
-    request.headers.add('Accept', '*/*');
-    final response = await request.close();
-    final code = response.statusCode;
-    final stringData = await response.transform(const Utf8Decoder(allowMalformed: true)).join();
-
-    if (code / 100 != 2) 
-    {
-      return {'error': 'http', 'code': code, 'data': stringData};
-    } 
-    else 
-    {
-      try 
-      {
-        final data = jsonDecode(stringData);
-        return data;
-      } 
-      catch (e) 
-      {
-        return {'error': 'response', 'code': code, 'data': stringData};
-      }
-    }
-  } 
-  finally 
-  {
-    client.close();
-  }
-}
 
 Uri buildUri(String url, [Map<String, String>? components]) 
 {
@@ -442,16 +323,48 @@ Uri buildUri(String url, [Map<String, String>? components])
   return Uri.parse(builder.toString());
 }
 
+
+/// Klient pro Zoho API
+
 class ZohoClient 
 {
+  /// Client ID - získá se při registraci aplikace
   final String clientId;
+
+  /// Client Secret - získá se při registraci aplikace
   final String clientSecret;
+
+  /// Redirect URL - získá se při registraci aplikace
   final String redirectUrl;
+
+  /// Kód pro získání access tokenu
+  String code = '';
+
+  /// Access token
   String accessToken = '';
+
+  /// Výsledek posledního dotazu
+  Map<String, dynamic>? lastResponse;
+
+  /// HTTP klient
   final httpClient = HttpClient();
+
+  /// Scope - seznam oprávnění vyžadovaných aplikací
   var scope = <String>{};
+
+  /// Zoho API URL
   String zohoApis = 'https://www.zohoapis.com';
 
+  /// Zoho Accounts URL
+  String zohoAccounts = 'https://accounts.zoho.com';
+
+  /// Zoho OAuth URL
+  String zohoAuth = '/oauth/v2/auth';
+
+  /// OAuth Completer - slouží pro čekání na získání kódu pomocí WebView
+  Completer<String>? oauthCompleter;
+
+  /// Konstruktor
   ZohoClient({required this.clientId, required this.clientSecret, required this.redirectUrl, Set<String>? scope}) 
   {
     if (scope != null) 
@@ -460,78 +373,238 @@ class ZohoClient
     }
   }
 
-  Future<Map> booksGetCurrentUser() => get('$zohoApis/books/v3/users/me');
+  /// Získání informací o přihlášeném uživateli
+  Future<Map> booksGetCurrentUser() => doRequest('$zohoApis/books/v3/users/me');
 
-  Future<Map> get(String url,
+  /// Provedení dotazu na Zoho API
+  /// - [url] - URL dotazu.
+  /// - [requestType] - typ dotazu (GET, POST, PUT, DELETE).
+  /// - [components] - parametry dotazu.
+  /// - [jsonData] - data pro POST a PUT dotazy.
+  /// - [return] - výsledek dotazu ve formátu Map (json).
+  /// 
+  Future<Map> doRequest(String url,
     {ZohoRequest_Type requestType = ZohoRequest_Type.GET, Map<String, String>? components, dynamic jsonData}) async 
   {
+    // Přidání scope do parametrů
     final uri = buildUri(url, components);
+
+    // Vytvoření HTTP klienta
     final client = HttpClient();
 
     try 
     {
       HttpClientRequest request;
 
+      // Vytvoření requestu podle typu	
       switch (requestType) 
       {
         case ZohoRequest_Type.GET:
         request = await client.getUrl(uri);
         break;
+
         case ZohoRequest_Type.POST:
         request = await client.postUrl(uri);
         break;
+
         case ZohoRequest_Type.PUT:
         request = await client.putUrl(uri);
         break;
+
         case ZohoRequest_Type.DELETE:
         request = await client.deleteUrl(uri);
         break;
+
         default:
         request = await client.getUrl(uri);
         break;
       }
 
+      // Nastavení hlaviček
       request.headers.add('Accept', '*/*');
+
+      // Přidání access tokenu do hlaviček
       if (accessToken.isNotEmpty) 
       {
         request.headers.add('Authorization', 'Zoho-oauthtoken $accessToken');
       }
 
+      // Přidání dat do requestu pro POST a PUT
       if (jsonData != null) 
       {
         request.headers.add('Content-Type', 'application/json');
         request.add(utf8.encode(json.encode(jsonData)));
       }
 
+      // Odeslání requestu
       final response = await request.close();
+
+      // Získání HTTP výsledku
       final code = response.statusCode;
+
+      // Získání dat z response
       final stringData = await response.transform(const Utf8Decoder(allowMalformed: true)).join();
 
-      if (code != 200) 
+      if ((code / 100) != 2) 
       {
-        return {'error': 'http', 'code': code, 'data': stringData};
+        // Http chyba
+        lastResponse = {'error': 'http', 'code': code, 'data': stringData};
+        return lastResponse!;
       } 
       else 
       {
+        // Zpracování dat
         try 
         {
           final data = jsonDecode(stringData);
+          lastResponse = data;
           return data;
         } 
         catch (e) 
         {
-          return {'error': 'response', 'code': code, 'data': stringData};
+          lastResponse = {'error': 'response', 'code': code, 'data': stringData};
+          return lastResponse!;
         }
       }
     } 
     catch (e) 
     {
-      return {'error': 'http', 'code': 0, 'data': e.toString()};
+      lastResponse = {'error': 'http', 'code': 0, 'data': e.toString()};
+      return lastResponse!;
     } 
     finally 
     {
+      // Uzavření HTTP klienta
       client.close();
     }
+  }
+
+  /// Získání access tokenu
+  Future<String> getAccessToken() async
+  {
+    accessToken = '';
+
+    /// Konec pokud není k dispozici kód
+    if (code.isEmpty)
+    {
+      throw Exception('code is empty');
+    }
+
+    /// Získání access tokenu
+    final response = await doRequest
+    (
+      '$zohoAccounts/oauth/v2/token',
+      requestType: ZohoRequest_Type.POST,
+      components: 
+      {
+        'code': code,
+        'client_id': clientId,
+        'client_secret': clientSecret,
+        'redirect_uri': redirectUrl,
+        'grant_type': 'authorization_code',
+      }
+    );
+
+    /// Uložení access tokenu
+    accessToken = response['access_token'] ?? '';
+
+    return accessToken;
+  }
+
+  void buildAuthCompleter()
+  {
+    oauthCompleter = Completer<String>();
+  }
+
+  Widget buildWebAuthWidget()
+  {
+    code = '';
+
+    return OAuthWeb(
+      url: '$zohoAccounts$zohoAuth',
+      components: 
+      {
+              'scope':
+              'ZohoBooks.invoices.CREATE,ZohoBooks.invoices.READ,ZohoBooks.invoices.UPDATE,ZohoBooks.invoices.DELETE,ZohoBooks.settings.READ,ZohoBooks.contacts.READ',
+              'client_id': clientId,
+              'state': 'testing',
+              'response_type': 'code',
+              'redirect_uri': redirectUrl,
+              'access_type': 'online',
+              'prompt': 'mujprompt'
+      },
+      redirectUrlTest: redirectUrl,
+      onRedirect: _oAuthRedirect,
+      );
+  }
+
+  void _oAuthRedirect(String url) 
+  {
+    try 
+    {
+      final uri = Uri.parse(url);
+      code = uri.queryParameters['code'] ?? '';
+      zohoAccounts = uri.queryParameters['accounts-server'] ?? zohoAccounts;
+      oauthCompleter?.complete(code);
+    } 
+    catch (e) 
+    {
+      print(e);
+    }
+  }
+
+  Future<String> oAuthWaitCode(Duration?timeout) async 
+  {
+    try
+    {
+      if (oauthCompleter == null) 
+      {
+        code = '';
+      }
+      else
+      {
+        if (timeout!=null)
+        {
+          bool timeOver =  false;
+          final fTimeout = Future.delayed(timeout, () => timeOver = true);
+          await Future.any([oauthCompleter!.future, fTimeout]);
+          if (timeOver)
+          {
+            code = '';
+          }
+        }
+        else
+        {
+          await oauthCompleter!.future;
+        }
+      }
+    }
+    finally
+    {
+      oauthCompleter = null;
+    }
+
+    return code;
+
+  }
+
+
+  Future<String> getOAuthCode({required BuildContext context,Duration? timeout}) async
+  {
+      buildAuthCompleter();     
+      Navigator.push
+      (
+        context,
+        MaterialPageRoute
+        (
+          settings: const RouteSettings(name: 'OAuthWeb',),
+          builder: (context) => buildWebAuthWidget()
+          
+        ),
+      );
+
+      return oAuthWaitCode(timeout);
+
   }
 }
 
